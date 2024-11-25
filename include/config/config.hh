@@ -2,11 +2,11 @@
 
 namespace fan::config {
 
-double snakeUpdateRate_ = 10.0;
+constexpr double snakeUpdateRate_ = 20.0;
 
-int snakeNum_ = 12;
-int foodNum_ = 500;
+constexpr int snakeNum_ = 12;
+constexpr int foodNum_ = 10;
 
-int windowWidth_ = 100;
-int windowHeight_ = 100;
+constexpr int windowWidth_ = 100;
+constexpr int windowHeight_ = 100;
 } // namespace fan::config

@@ -6,7 +6,6 @@
 #include <QPixmap>
 #include <QTimer>
 #include <QWidget>
-#include <vector>
 
 namespace fan {
 class Widget : public QWidget {
@@ -18,18 +17,18 @@ public:
             for (size_t i = 0; i < snakes_.size(); ++i) {
                 if (!snakes_[i]->isRunning()) snakes_.erase(snakes_.begin() + static_cast<int>(i));
             }
-            if (Map::instance().removedSnake() != -1) {
-                snakes_[Map::instance().removedSnake()]->stop();
+            auto placeholder = Map::instance().removedSnake();
+            if (placeholder != -1) {
+              snakes_[Map::instance().removedSnake()]->stop();
 
-                snakes_.erase(snakes_.begin() + Map::instance().removedSnake());
-                
-                for (size_t i = Map::instance().removedSnake(); i < snakes_.size(); ++i) {
-                    snakes_[i]->setSnakeId(static_cast<int>(i));
-                }
-                Map::instance().snakeRemoved();
+              snakes_.erase(snakes_.begin() + Map::instance().removedSnake());
+
+              for (size_t i = Map::instance().removedSnake();
+                   i < snakes_.size(); ++i) {
+                snakes_[i]->setSnakeId(static_cast<int>(i));
+              }
+              Map::instance().snakeRemoved();
             }
-            std::cout << "snaek size:" << snakes_.size() << std::endl;
-            Map::instance().update();
             update();
         });
         start();
@@ -64,8 +63,6 @@ protected:
             image.setPixel(food.x(), food.y(), 0xFF0000);
         }
 
-        Map::instance().unlock();
-
         painter->drawPixmap(0, 0, QPixmap::fromImage(image));
         painter->end();
     }
@@ -74,26 +71,26 @@ private:
     void addSnake() {
         auto snake0 = new Snake0();
         snake0->setSnakeId(0);
-        snakes_.emplace_back(dynamic_cast<AbstarctSnake*>(snake0));
+        snakes_.emplace_back(dynamic_cast<AbstractSnake *>(snake0));
         Map::instance().addSnake();
 
         auto snake1 = new Snake1();
         snake1->setSnakeId(1);
-        snakes_.emplace_back(dynamic_cast<AbstarctSnake*>(snake1));
+        snakes_.emplace_back(dynamic_cast<AbstractSnake *>(snake1));
         Map::instance().addSnake();
 
         auto snake2 = new Snake2();
         snake2->setSnakeId(2);
-        snakes_.emplace_back(dynamic_cast<AbstarctSnake*>(snake2));
+        snakes_.emplace_back(dynamic_cast<AbstractSnake *>(snake2));
         Map::instance().addSnake();
 
         auto snake3 = new Snake3();
         snake3->setSnakeId(3);
-        snakes_.emplace_back(dynamic_cast<AbstarctSnake*>(snake3));
+        snakes_.emplace_back(dynamic_cast<AbstractSnake *>(snake3));
         Map::instance().addSnake();
     }
 
     QTimer timer_;
-    std::vector<AbstarctSnake*> snakes_;
+    std::vector<AbstractSnake *> snakes_;
 };
 } // namespace fan

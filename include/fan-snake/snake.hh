@@ -1,120 +1,109 @@
 #pragma once
 
-#include "config/config.hh"
 #include "fan-snake/map.hh"
-#include <QThreadPool>
-#include <QMutexLocker>
+#include <cstddef>
 #include <iostream>
-#include <vector>
+#include <thread>
 
 namespace fan {
-class AbstarctSnake : public QRunnable {
+class AbstractSnake {
 public:
-    explicit AbstarctSnake() { }
-    virtual ~AbstarctSnake() = default;
+  explicit AbstractSnake() {}
+  virtual ~AbstractSnake() = default;
 
-    void run() override {
-        QThreadPool::globalInstance();
-        while (isRunning_.load(std::memory_order::relaxed)) {
-            update();
-            fan::Map::instance().moveSnake(motion_);
-            Map::instance().unlock();
-            QThread::msleep(static_cast<unsigned long>(1000 / fan::config::snakeUpdateRate_));
-        }
-    }
+  virtual void update() {};
 
-    virtual void update() {};
+  void start() {
+    isRunning_.store(true, std::memory_order::relaxed);
+    std::thread task([this]() {
+      using namespace std::chrono_literals;
+      constexpr auto update_period =
+          std::chrono::round<std::chrono::steady_clock::duration>(
+              1.0s / config::snakeUpdateRate_);
+      auto next_iteration_time = std::chrono::steady_clock::now();
+      while (isRunning_.load(std::memory_order::relaxed)) {
+        update();
+        fan::Map::instance().moveSnake(motion_);
+        next_iteration_time += update_period;
+        std::this_thread::sleep_until(next_iteration_time);
+      }
+    });
+    task.detach();
+  }
 
-    void start() {
-        isRunning_.store(true, std::memory_order::relaxed);
-        QThreadPool::globalInstance()->start(this);
-    }
+  void setDirection(Direction direction) { motion_.direction = direction; }
 
-    void setDirection(Direction direction) { motion_.direction = direction; }
+  void stop() { isRunning_.store(false, std::memory_order::relaxed); }
 
-    void stop() { isRunning_.store(false, std::memory_order::relaxed); }
+  bool isRunning() { return isRunning_.load(std::memory_order::relaxed); }
 
-    bool isRunning() { return isRunning_.load(std::memory_order::relaxed); }
-
-    void setSnakeId(int id) { motion_.snakeId = id; }
+  void setSnakeId(int id) { motion_.snakeId = id; }
+  int snakeId() const { return motion_.snakeId; }
 
 private:
-    std::atomic<bool> isRunning_ = false;
-    Motion motion_ = { 0, Direction::None };
-    std::vector<std::pair<int, int>> snakeBody_;
+  std::atomic<bool> isRunning_ = false;
+  Motion motion_ = {0, Direction::None};
+  std::vector<std::pair<int, int>> snakeBody_;
 };
 } // namespace fan
 
-class Snake0 : public fan::AbstarctSnake {
+class Snake0 : public fan::AbstractSnake {
 public:
-    explicit Snake0()
-        : AbstarctSnake() { }
-    ~Snake0() override {};
-    void update() override {
-        std::cout << "snake 0 is updating" << std::endl;
-        for (size_t i = 0; i < fan::Map::instance().allSnake().size(); ++i) {
-            for (int j = 0; j < fan::Map::instance().allSnake()[i].size(); ++j) {
-                std::cout << "snakeId: " << 0
-                          << "x: " << fan::Map::instance().allSnake()[i][j].x()
-                          << " y: " << fan::Map::instance().allSnake()[i][j].y() << std::endl;
-            }
-        };
-        setDirection(fan::Direction::Up);
-        // fan::Map::instance().allSnake();
-    }
+  explicit Snake0() : AbstractSnake() {}
+  ~Snake0() override{};
+  void update() override {
+    for (size_t i = 0; i < fan::Map::instance().allSnake()[snakeId()].size();
+         i++)
+      std::cout << "snake " << i << " : "
+                << fan::Map::instance().allSnake()[snakeId()][i].x() << " "
+                << fan::Map::instance().allSnake()[snakeId()][i].y()
+                << std::endl;
+
+    setDirection(fan::Direction::Up);
+  }
 };
 
-class Snake1 : public fan::AbstarctSnake {
+class Snake1 : public fan::AbstractSnake {
 public:
-    explicit Snake1()
-        : AbstarctSnake() { }
-    ~Snake1() override {};
-    void update() override {
-        std::cout << "snake 1 is updating" << std::endl;
-        for (size_t i = 0; i < fan::Map::instance().allSnake().size(); ++i) {
-            for (int j = 0; j < fan::Map::instance().allSnake()[i].size(); ++j) {
-                std::cout << "snakeId: " << 1
-                          << "x: " << fan::Map::instance().allSnake()[i][j].x()
-                          << " y: " << fan::Map::instance().allSnake()[i][j].y() << std::endl;
-            }
-        };
-        setDirection(fan::Direction::Down);
-        // fan::Map::instance().allSnake();
-    }
+  explicit Snake1() : AbstractSnake() {}
+  ~Snake1() override{};
+  void update() override {
+    for (size_t i = 0; i < fan::Map::instance().allSnake()[snakeId()].size();
+         i++)
+      std::cout << "snake " << i << " : "
+                << fan::Map::instance().allSnake()[snakeId()][i].x() << " "
+                << fan::Map::instance().allSnake()[snakeId()][i].y()
+                << std::endl;
+    setDirection(fan::Direction::Down);
+  }
 };
 
-class Snake2 : public fan::AbstarctSnake {
+class Snake2 : public fan::AbstractSnake {
 public:
-    explicit Snake2()
-        : AbstarctSnake() { }
-    ~Snake2() override {};
-    void update() override {
-        std::cout << "snake 1 is updating" << std::endl;
-        for (size_t i = 0; i < fan::Map::instance().allSnake().size(); ++i) {
-            for (int j = 0; j < fan::Map::instance().allSnake()[i].size(); ++j) {
-                std::cout << "snakeId: " << 1 << "x: " << fan::Map::instance().allSnake()[i][j].x()
-                          << " y: " << fan::Map::instance().allSnake()[i][j].y() << std::endl;
-            }
-        };
-        setDirection(fan::Direction::Down);
-        // fan::Map::instance().allSnake();
-    }
+  explicit Snake2() : AbstractSnake() {}
+  ~Snake2() override{};
+  void update() override {
+    for (size_t i = 0; i < fan::Map::instance().allSnake()[snakeId()].size();
+         i++)
+      std::cout << "snake " << i << " : "
+                << fan::Map::instance().allSnake()[snakeId()][i].x() << " "
+                << fan::Map::instance().allSnake()[snakeId()][i].y()
+                << std::endl;
+    setDirection(fan::Direction::Left);
+  }
 };
 
-class Snake3 : public fan::AbstarctSnake {
+class Snake3 : public fan::AbstractSnake {
 public:
-    explicit Snake3()
-        : AbstarctSnake() { }
-    ~Snake3() override {};
-    void update() override {
-        std::cout << "snake 1 is updating" << std::endl;
-        for (size_t i = 0; i < fan::Map::instance().allSnake().size(); ++i) {
-            for (int j = 0; j < fan::Map::instance().allSnake()[i].size(); ++j) {
-                std::cout << "snakeId: " << 1 << "x: " << fan::Map::instance().allSnake()[i][j].x()
-                          << " y: " << fan::Map::instance().allSnake()[i][j].y() << std::endl;
-            }
-        };
-        setDirection(fan::Direction::Down);
-        // fan::Map::instance().allSnake();
-    }
+  explicit Snake3() : AbstractSnake() {}
+  ~Snake3() override{};
+  void update() override {
+    for (size_t i = 0; i < fan::Map::instance().allSnake()[snakeId()].size();
+         i++)
+      std::cout << "snake " << i << " : "
+                << fan::Map::instance().allSnake()[snakeId()][i].x() << " "
+                << fan::Map::instance().allSnake()[snakeId()][i].y()
+                << std::endl;
+    setDirection(fan::Direction::Right);
+  }
 };
